@@ -1,0 +1,229 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  REPORTER
+  HR_ADMIN
+  LEGAL_ADMIN
+  IT_ADMIN
+  SUPER_ADMIN
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  INFO
+}
+
+enum CaseStatus {
+  OPEN
+  UNDER_REVIEW
+  ESCALATED
+  RESOLVED
+  CLOSED
+}
+
+enum ChannelType {
+  GENERAL
+  HR
+  SAFETY
+  POLICY
+  IT_SECURITY
+  LEGAL
+}
+
+enum NotificationType {
+  CASE_OPENED
+  CASE_UPDATED
+  CASE_ESCALATED
+  CASE_RESOLVED
+  NEW_MESSAGE
+  CASE_ASSIGNED
+}
+
+// ─── Admins (HR, Legal, IT, Super) ──────────────────────────────────────────
+model Admin {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  passwordHash String
+  displayName  String
+  role         Role      @default(HR_ADMIN)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  messages        Message[]        @relation("AdminMessages")
+  caseAssignments CaseAssignment[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+
+  @@index([username])
+  @@map("admins")
+}
+
+// ─── Reporter sessions (fully anonymous, no PII) ─────────────────────────────
+model ReporterSession {
+  id          String   @id @default(uuid())
+  username    String   @unique                // chosen by user, e.g. "shadow_hawk"
+  passwordHash String
+  anonId      String   @unique               // display ID e.g. "Anon-5541"
+  avatarSeed  String                         // seed for SVG avatar generation
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  messages      Message[]
+  reports       Report[]
+  notifications Notification[]
+
+  @@index([username])
+  @@map("reporter_sessions")
+}
+
+// ─── Channels ─────────────────────────────────────────────────────────────────
+model Channel {
+  id          String      @id @default(uuid())
+  slug        String      @unique
+  displayName String
+  type        ChannelType @default(GENERAL)
+  description String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+
+  messages Message[]
+  reports  Report[]
+
+  @@map("channels")
+}
+
+// ─── Reports / Cases ──────────────────────────────────────────────────────────
+model Report {
+  id                String     @id @default(uuid())
+  caseNumber        String     @unique          // e.g. HR-2024-0312
+  severity          Severity   @default(INFO)
+  status            CaseStatus @default(OPEN)
+  channelId         String
+  reporterSessionId String?
+  encryptedSummary  String?                     // AES-256-GCM admin-visible summary
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  channel         Channel          @relation(fields: [channelId], references: [id])
+  reporterSession ReporterSession? @relation(fields: [reporterSessionId], references: [id])
+  messages        Message[]
+  assignments     CaseAssignment[]
+  attachments     Attachment[]
+  auditLogs       AuditLog[]
+
+  @@index([status, severity])
+  @@index([channelId])
+  @@map("reports")
+}
+
+// ─── Messages ─────────────────────────────────────────────────────────────────
+model Message {
+  id               String   @id @default(uuid())
+  channelId        String
+  reportId         String?
+  encryptedContent String                       // AES-256-GCM
+  iv               String                       // hex IV
+  severity         Severity @default(INFO)
+  isAdminMessage   Boolean  @default(false)
+
+  reporterSessionId String?
+  adminId           String?
+
+  createdAt DateTime @default(now())
+  isDeleted Boolean  @default(false)
+
+  channel         Channel          @relation(fields: [channelId], references: [id])
+  report          Report?          @relation(fields: [reportId], references: [id])
+  reporterSession ReporterSession? @relation(fields: [reporterSessionId], references: [id])
+  admin           Admin?           @relation("AdminMessages", fields: [adminId], references: [id])
+  attachments     Attachment[]
+
+  @@index([channelId, createdAt])
+  @@index([reportId])
+  @@map("messages")
+}
+
+// ─── Attachments ──────────────────────────────────────────────────────────────
+model Attachment {
+  id            String   @id @default(uuid())
+  messageId     String?
+  reportId      String?
+  originalName  String
+  encryptedPath String                          // path to AES-encrypted file
+  mimeType      String
+  sizeBytes     Int
+  checksum      String                          // SHA-256 of original
+  uploadedAt    DateTime @default(now())
+
+  message Message? @relation(fields: [messageId], references: [id])
+  report  Report?  @relation(fields: [reportId], references: [id])
+
+  @@map("attachments")
+}
+
+// ─── Case Assignments ─────────────────────────────────────────────────────────
+model CaseAssignment {
+  id         String   @id @default(uuid())
+  reportId   String
+  adminId    String
+  assignedAt DateTime @default(now())
+  note       String?
+
+  report Report @relation(fields: [reportId], references: [id])
+  admin  Admin  @relation(fields: [adminId], references: [id])
+
+  @@unique([reportId, adminId])
+  @@map("case_assignments")
+}
+
+// ─── In-app Notifications (no email) ─────────────────────────────────────────
+model Notification {
+  id                String           @id @default(uuid())
+  type              NotificationType
+  title             String
+  body              String
+  reportId          String?
+  isRead            Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+
+  adminId           String?
+  reporterSessionId String?
+
+  admin           Admin?           @relation(fields: [adminId], references: [id])
+  reporterSession ReporterSession? @relation(fields: [reporterSessionId], references: [id])
+
+  @@index([adminId, isRead])
+  @@index([reporterSessionId, isRead])
+  @@map("notifications")
+}
+
+// ─── Audit Logs ───────────────────────────────────────────────────────────────
+model AuditLog {
+  id        String   @id @default(uuid())
+  adminId   String?
+  action    String
+  entity    String
+  entityId  String
+  meta      Json?
+  ipHash    String?
+  createdAt DateTime @default(now())
+
+  admin    Admin?  @relation(fields: [adminId], references: [id])
+  report   Report? @relation(fields: [reportId], references: [id])
+  reportId String?
+
+  @@index([adminId, createdAt])
+  @@index([entityId])
+  @@map("audit_logs")
+}

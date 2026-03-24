@@ -1,0 +1,258 @@
+@use '@angular/material' as mat;
+@use 'sass:map';
+
+// ─── Fonts ────────────────────────────────────────────────────────────────────
+$font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+$font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+// ─── Palette ──────────────────────────────────────────────────────────────────
+$navy-50:  #e8edf5;
+$navy-100: #c5d0e0;
+$navy-200: #9fb4d0;
+$navy-300: #7a98bf;
+$navy-400: #5a7499;
+$navy-500: #3a5278;
+$navy-600: #2a3f60;
+$navy-700: #1e2d47;
+$navy-800: #111827;
+$navy-900: #0b0f1a;
+
+$accent:   #3b7de8;
+$accent-h: #2563ca;
+$teal:     #1eb8a0;
+$warn:     #e85d3b;
+$gold:     #e8a93b;
+$success:  #2ecc71;
+
+// ─── Material custom theme ────────────────────────────────────────────────────
+$sentinel-primary: mat.define-palette((
+  50:   $navy-50,  100: $navy-100, 200: $navy-200, 300: $navy-300,
+  400:  $navy-400, 500: $accent,   600: $accent-h, 700: #1a4fa8,
+  800:  #123a7a,   900: #0a2550,
+  contrast: (
+    50: rgba(0,0,0,.87), 100: rgba(0,0,0,.87), 200: rgba(0,0,0,.87),
+    300: rgba(0,0,0,.87), 400: #fff, 500: #fff, 600: #fff,
+    700: #fff, 800: #fff, 900: #fff,
+  )
+), 500, 300, 700);
+
+$sentinel-accent:  mat.define-palette(mat.$teal-palette, 400, 200, 700);
+$sentinel-warn:    mat.define-palette(mat.$deep-orange-palette, 500);
+
+$sentinel-theme: mat.define-dark-theme((
+  color: (
+    primary: $sentinel-primary,
+    accent:  $sentinel-accent,
+    warn:    $sentinel-warn,
+  ),
+  typography: mat.define-typography-config(
+    $font-family: $font-sans,
+  ),
+  density: -1,
+));
+
+@include mat.all-component-themes($sentinel-theme);
+@include mat.all-component-typographies();
+
+// ─── CSS Custom Properties ────────────────────────────────────────────────────
+:root {
+  --navy-900: #{$navy-900};
+  --navy-800: #{$navy-800};
+  --navy-700: #{$navy-700};
+  --navy-600: #{$navy-600};
+  --navy-500: #{$navy-500};
+  --navy-400: #{$navy-400};
+  --navy-300: #{$navy-300};
+  --navy-200: #{$navy-200};
+  --navy-100: #{$navy-100};
+  --navy-50:  #{$navy-50};
+
+  --accent:   #{$accent};
+  --accent-h: #{$accent-h};
+  --teal:     #{$teal};
+  --warn:     #{$warn};
+  --gold:     #{$gold};
+  --success:  #{$success};
+
+  --font-sans: #{$font-sans};
+  --font-mono: #{$font-mono};
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --header-h:  56px;
+  --sidebar-w: 240px;
+  --sidebar-collapsed: 64px;
+
+  --transition: 150ms ease;
+}
+
+// ─── Reset & Base ─────────────────────────────────────────────────────────────
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: $font-sans;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--navy-900);
+  color: var(--navy-50);
+  overflow: hidden;
+}
+
+// ─── Scrollbar ────────────────────────────────────────────────────────────────
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--navy-500); }
+
+// ─── Typography helpers ───────────────────────────────────────────────────────
+.mono        { font-family: $font-mono; }
+.text-muted  { color: var(--navy-400); }
+.text-accent { color: var(--accent); }
+.text-teal   { color: var(--teal); }
+.text-warn   { color: var(--warn); }
+.text-gold   { color: var(--gold); }
+.text-success{ color: var(--success); }
+
+// ─── Severity badges ──────────────────────────────────────────────────────────
+.sev-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .06em;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+
+  &.sev-CRITICAL { background: rgba(232,93,59,.14);  color: #f08060; border: 1px solid rgba(232,93,59,.3); }
+  &.sev-HIGH     { background: rgba(232,169,59,.12); color: #e8b870; border: 1px solid rgba(232,169,59,.25); }
+  &.sev-MEDIUM   { background: rgba(59,125,232,.10); color: #7baaf0; border: 1px solid rgba(59,125,232,.2); }
+  &.sev-INFO     { background: rgba(90,116,153,.15); color: #9fb4d0; border: 1px solid rgba(90,116,153,.25); }
+}
+
+// ─── Status badges ────────────────────────────────────────────────────────────
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: $font-mono;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+
+  &.status-OPEN         { background: rgba(59,125,232,.10); color: #7baaf0; border: 1px solid rgba(59,125,232,.2); }
+  &.status-UNDER_REVIEW { background: rgba(232,169,59,.10); color: #e8b870; border: 1px solid rgba(232,169,59,.2); }
+  &.status-ESCALATED    { background: rgba(232,93,59,.12);  color: #f08060; border: 1px solid rgba(232,93,59,.25); }
+  &.status-RESOLVED     { background: rgba(46,204,113,.10); color: #2ecc71; border: 1px solid rgba(46,204,113,.2); }
+  &.status-CLOSED       { background: rgba(90,116,153,.12); color: #9fb4d0; border: 1px solid rgba(90,116,153,.2); }
+}
+
+// ─── Cards ────────────────────────────────────────────────────────────────────
+.snt-card {
+  background: var(--navy-800);
+  border: 1px solid var(--navy-600);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+// ─── Material component overrides ────────────────────────────────────────────
+.mat-mdc-form-field {
+  width: 100%;
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    border-color: var(--navy-600) !important;
+  }
+  &:hover .mdc-notched-outline__leading,
+  &:hover .mdc-notched-outline__notch,
+  &:hover .mdc-notched-outline__trailing {
+    border-color: var(--navy-500) !important;
+  }
+  .mat-mdc-form-field-input-control {
+    color: var(--navy-50) !important;
+    font-family: $font-sans;
+  }
+}
+
+.mat-mdc-dialog-container {
+  --mdc-dialog-container-color: var(--navy-800);
+  border: 1px solid var(--navy-600);
+  border-radius: var(--radius-xl) !important;
+}
+
+.mat-mdc-snack-bar-container {
+  --mdc-snackbar-container-color: var(--navy-700);
+  --mdc-snackbar-supporting-text-color: var(--navy-50);
+  border: 1px solid var(--navy-600);
+  border-radius: var(--radius-md) !important;
+
+  &.snack-error {
+    --mdc-snackbar-container-color: rgba(232,93,59,.15);
+    border-color: rgba(232,93,59,.3);
+    --mdc-snackbar-supporting-text-color: #f08060;
+  }
+  &.snack-success {
+    --mdc-snackbar-container-color: rgba(46,204,113,.12);
+    border-color: rgba(46,204,113,.25);
+    --mdc-snackbar-supporting-text-color: #2ecc71;
+  }
+}
+
+.mat-mdc-menu-panel {
+  background: var(--navy-800) !important;
+  border: 1px solid var(--navy-600) !important;
+  border-radius: var(--radius-md) !important;
+  min-width: 180px !important;
+}
+
+.mat-mdc-button, .mat-mdc-raised-button, .mat-mdc-outlined-button {
+  border-radius: var(--radius-md) !important;
+  font-family: $font-sans !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+}
+
+.mat-mdc-chip { border-radius: var(--radius-sm) !important; }
+
+// ─── Snackbar helper ──────────────────────────────────────────────────────────
+.snack-success .mat-mdc-snack-bar-label { color: $success !important; }
+.snack-error   .mat-mdc-snack-bar-label { color: #f08060 !important; }
+
+// ─── Layout utilities ─────────────────────────────────────────────────────────
+.flex        { display: flex; }
+.flex-col    { display: flex; flex-direction: column; }
+.flex-1      { flex: 1; }
+.items-center{ align-items: center; }
+.gap-8       { gap: 8px; }
+.gap-12      { gap: 12px; }
+.gap-16      { gap: 16px; }
+.w-full      { width: 100%; }
+.h-full      { height: 100%; }
+.overflow-hidden { overflow: hidden; }
+.overflow-y-auto { overflow-y: auto; }
+
+// ─── Print disable ────────────────────────────────────────────────────────────
+@media print { body { display: none !important; } }
+
+// ─── Mobile breakpoints ──────────────────────────────────────────────────────
+$bp-sm:  576px;
+$bp-md:  768px;
+$bp-lg:  1024px;
+$bp-xl:  1280px;
+
+@mixin mobile { @media (max-width: #{$bp-md - 1}) { @content; } }
+@mixin tablet { @media (min-width: $bp-md) and (max-width: #{$bp-lg - 1}) { @content; } }
+@mixin desktop{ @media (min-width: $bp-lg) { @content; } }
